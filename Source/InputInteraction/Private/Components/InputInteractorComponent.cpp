@@ -130,9 +130,15 @@ bool UInputInteractorComponent::CheckInteractable(UInputInteractableComponent* I
 		InputInteractableComponent->UpdateState(EInteractionState::None);
 		return false;
 	}
+
+	const UInputInteractableDataAsset* Data = InputInteractableComponent->GetInteractableDataAsset();
+	if (!IsValid(Data))
+	{
+		return false;
+	}
 		
 	const float DistanceFromOrigin = FVector::Distance(GetOwner()->GetActorLocation(), InputInteractableComponent->GetComponentLocation());
-	const bool bDetected = DistanceFromOrigin < InputInteractableComponent->GetInteractableDataAsset()->MaxDetectionDistance;
+	const bool bDetected = DistanceFromOrigin < Data->MaxDetectionDistance;
 	if (!bDetected)
 	{
 		InputInteractableComponent->UpdateState(EInteractionState::None);
@@ -196,10 +202,17 @@ UInputInteractableComponent* UInputInteractorComponent::SelectInteractable()
 			continue;
 		}
 
+		const UInputInteractableDataAsset* Data = Interactable->GetInteractableDataAsset();
+		if (!IsValid(Data))
+		{
+			DetectedInteractables.Remove(Interactable);
+			continue;
+		}
+
 		const float DistanceFromCharacter = FVector3d::Distance(CharacterLocation, Interactable->GetComponentLocation());
 		float DistanceFromOrigin = DistanceFromCharacter;
 
-		const bool bInHoverRangeCharacterRelative = DistanceFromCharacter <= Interactable->GetInteractableDataAsset()->MaxSelectionDistanceFromCharacter;
+		const bool bInHoverRangeCharacterRelative = DistanceFromCharacter <= Data->MaxSelectionDistanceFromCharacter;
 		bool bInHoverRangeCameraRelative = true;
 
 		if (DetectCameraProximity)
@@ -218,7 +231,7 @@ UInputInteractableComponent* UInputInteractorComponent::SelectInteractable()
 			UGameplayStatics::ProjectWorldToScreen(PlayerController, Interactable->GetComponentLocation(), ScreenPosition);
 
 			DistanceFromOrigin = FVector2D::Distance(ScreenCenter, ScreenPosition);
-			bInHoverRangeCameraRelative = DistanceFromOrigin <= Interactable->GetInteractableDataAsset()->MaxSelectionDistanceFromScreenCenter;
+			bInHoverRangeCameraRelative = DistanceFromOrigin <= Data->MaxSelectionDistanceFromScreenCenter;
 		}
 		
 		if (bInHoverRangeCharacterRelative && bInHoverRangeCameraRelative && DistanceFromOrigin <= TargetDistanceFromOrigin)
@@ -242,8 +255,14 @@ void UInputInteractorComponent::Interact(UInputInteractableComponent* Interactab
 	{
 		return;
 	}
+	
+	const UInputInteractableDataAsset* Data = Interactable->GetInteractableDataAsset();
+	if (!IsValid(Data))
+	{
+		return;
+	}
 
-	if (Interactable->GetInteractableDataAsset()->bIsHoldInteraction)
+	if (Data->bIsHoldInteraction)
 	{
 		if (!SetCurrentInteractionTime(CurrentInteractionTime + CachedDeltatime, Interactable))
 		{
@@ -265,6 +284,11 @@ bool UInputInteractorComponent::SetCurrentInteractionTime(const float NewInterac
 	}
 
 	const UInputInteractableDataAsset* Data = Interactable->GetInteractableDataAsset();
+	if (!IsValid(Data))
+	{
+		return false;
+	}
+	
 	if (TimeSinceInteraction <= Data->DelayBetweenInteraction)
 	{
 		return false;
@@ -293,7 +317,13 @@ bool UInputInteractorComponent::ExecuteObstructionTrace(const UInputInteractable
 		return true;
 	}
 
-	if (Interactable->GetInteractableDataAsset()->bDetectWhenObstructed && Interactable->GetInteractableDataAsset()->bAllowInteractionWhenObstructed)
+	const UInputInteractableDataAsset* Data = Interactable->GetInteractableDataAsset();
+	if (!IsValid(Data))
+	{
+		return true;
+	}
+
+	if (Data->bDetectWhenObstructed && Data->bAllowInteractionWhenObstructed)
 	{
 		return false;
 	}
@@ -310,7 +340,7 @@ bool UInputInteractorComponent::ExecuteObstructionTrace(const UInputInteractable
 	Controller->GetActorEyesViewPoint(StartLocation, StartRotation);
 	
 	FHitResult ObstructionResult;
-	const ETraceTypeQuery TraceTypeQuery =  UEngineTypes::ConvertToTraceType(Interactable->GetInteractableDataAsset()->ObstructionTraceChannel);
+	const ETraceTypeQuery TraceTypeQuery =  UEngineTypes::ConvertToTraceType(Data->ObstructionTraceChannel);
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), StartLocation, Interactable->GetComponentLocation(), TraceTypeQuery, bTraceComplex, { GetOwner(), Interactable->GetOwner() }, GetDrawDebugType(), ObstructionResult, true, FLinearColor::Red, FLinearColor::Green, DebugTraceDuration);
 	
 	return ObstructionResult.bBlockingHit;
@@ -319,6 +349,12 @@ bool UInputInteractorComponent::ExecuteObstructionTrace(const UInputInteractable
 void UInputInteractorComponent::UpdateSelectedInput()
 {
 	if (!SelectedInteractable)
+	{
+		return;
+	}
+
+	const UInputInteractableDataAsset* Data = SelectedInteractable->GetInteractableDataAsset();
+	if (!IsValid(Data))
 	{
 		return;
 	}
