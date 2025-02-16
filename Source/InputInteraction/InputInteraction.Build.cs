@@ -25,7 +25,7 @@ public class InputInteraction : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core", "Engine",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -38,6 +38,8 @@ public class InputInteraction : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"EnhancedInput",
+				"UMG"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
