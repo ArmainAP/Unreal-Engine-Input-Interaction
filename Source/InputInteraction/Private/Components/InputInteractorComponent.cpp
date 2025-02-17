@@ -194,7 +194,7 @@ UInputInteractableComponent* UInputInteractorComponent::SelectInteractable()
 	const FVector CharacterDirection = CameraRotation.Vector();
 
 	UInputInteractableComponent* NewSelectedComponent = nullptr;
-	for (UInputInteractableComponent* Interactable : DetectedInteractables)
+	for (UInputInteractableComponent* Interactable : DetectedInteractables.Array())
 	{
 		if (!CheckInteractable(Interactable))
 		{
